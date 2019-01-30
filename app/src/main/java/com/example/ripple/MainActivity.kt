@@ -15,7 +15,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
         mToastRunnable.run()
 
 
@@ -24,12 +23,11 @@ class MainActivity : AppCompatActivity() {
     private val mToastRunnable = object : Runnable {
         override fun run() {
             val rippleBackground = findViewById<View>(R.id.content) as RippleBackground
-            val reverseRippleBackground = findViewById<View>(R.id.content2) as ReverseRippleBackground
-
             rippleBackground.startRippleAnimation()
+
             Handler().postDelayed({
-                reverseRippleBackground.reverseRippleAnimation()
-            }, 7000)
+                rippleBackground.reverseRippleAnimation()
+            }, 6000)
             mHandler.postDelayed(this, 12000)
         }
     }

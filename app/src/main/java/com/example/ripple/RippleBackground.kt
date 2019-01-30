@@ -10,6 +10,7 @@ import android.support.v4.content.ContextCompat
 import android.util.AttributeSet
 import android.view.View
 import android.view.animation.AccelerateDecelerateInterpolator
+import android.view.animation.Interpolator
 import android.widget.RelativeLayout
 import java.util.*
 
@@ -20,9 +21,13 @@ class RippleBackground : RelativeLayout {
     private var rippleStrokeWidth: Float = 0.toFloat()
     private var rippleRadius: Float = 0.toFloat()
     private var rippleDurationTime: Int = 0
+    private var rRippleDurationTime: Int = 0
     private var rippleAmount: Int = 0
+    private var rRippleAmount: Int = 0
     private var rippleDelay: Int = 0
+    private var rRippleDelay: Int = 0
     private var rippleScale: Float = 0.toFloat()
+    private var rRippleScale: Float = 0.toFloat()
     private var rippleType: Int = 0
     private var paint: Paint? = null
     private var isRippleAnimationRunning = false
@@ -30,9 +35,11 @@ class RippleBackground : RelativeLayout {
     private var animatorSet2: AnimatorSet? = null
     private var animatorList: ArrayList<Animator>? = null
     private var animatorList2: ArrayList<Animator>? = null
-
     private var rippleParams: RelativeLayout.LayoutParams? = null
     private val rippleViewList = ArrayList<RippleView>()
+    private val rRippleViewList = ArrayList<RippleView>()
+
+
 
     constructor(context: Context) : super(context)
 
@@ -53,23 +60,33 @@ class RippleBackground : RelativeLayout {
         }
 
         val typedArray = context.obtainStyledAttributes(attrs, R.styleable.RippleBackground)
+
         rippleColor =
             typedArray.getColor(R.styleable.RippleBackground_rb_color, ContextCompat.getColor(context,R.color.rippelColor))
+
         rippleStrokeWidth = typedArray.getDimension(
             R.styleable.RippleBackground_rb_strokeWidth,
             resources.getDimension(R.dimen.rippleStrokeWidth)
         )
+
         rippleRadius = typedArray.getDimension(
             R.styleable.RippleBackground_rb_radius,
             resources.getDimension(R.dimen.rippleRadius)
         )
+
         rippleDurationTime = typedArray.getInt(R.styleable.RippleBackground_rb_duration, DEFAULT_DURATION_TIME)
         rippleAmount = typedArray.getInt(R.styleable.RippleBackground_rb_rippleAmount, DEFAULT_RIPPLE_COUNT)
         rippleScale = typedArray.getFloat(R.styleable.RippleBackground_rb_scale, DEFAULT_SCALE)
+        rRippleDurationTime = typedArray.getInt(R.styleable.RippleBackground_rb_duration, DEFAULT_DURATION_TIME_R)
+        rRippleAmount = typedArray.getInt(R.styleable.RippleBackground_rb_rippleAmount, DEFAULT_RIPPLE_COUNT_R)
+        rRippleScale = typedArray.getFloat(R.styleable.RippleBackground_rb_scale, DEFAULT_SCALE_R)
+
         rippleType = typedArray.getInt(R.styleable.RippleBackground_rb_type, DEFAULT_FILL_TYPE)
         typedArray.recycle()
 
+
         rippleDelay = rippleDurationTime / rippleAmount
+        rRippleDelay = rRippleDurationTime / rRippleAmount
 
         paint = Paint()
         paint!!.isAntiAlias = true
@@ -91,8 +108,8 @@ class RippleBackground : RelativeLayout {
         animatorSet!!.interpolator = AccelerateDecelerateInterpolator()
 
         animatorSet2 = AnimatorSet()
-        animatorSet2!!.duration = rippleDurationTime.toLong()
-        animatorSet2!!.interpolator = AccelerateDecelerateInterpolator()
+        animatorSet2!!.duration = rRippleDurationTime.toLong()
+        animatorSet2!!.interpolator = ReverseInterpolator()
 
         animatorList = ArrayList()
         animatorList2 = ArrayList()
@@ -117,9 +134,29 @@ class RippleBackground : RelativeLayout {
             alphaAnimator.startDelay = (i * rippleDelay).toLong()
             animatorList!!.add(alphaAnimator)
         }
+        for (i in 0 .. rRippleAmount) {
+            val rippleView = RippleView(getContext())
+            addView(rippleView, rippleParams)
+            rRippleViewList.add(rippleView)
+            val scaleXAnimator = ObjectAnimator.ofFloat(rippleView, "ScaleX", 1.0f, rRippleScale)
+            scaleXAnimator.repeatCount = 1
+            scaleXAnimator.repeatMode = ObjectAnimator.RESTART
+            scaleXAnimator.startDelay = (i * rRippleDelay).toLong()
+            animatorList2!!.add(scaleXAnimator)
+            val scaleYAnimator = ObjectAnimator.ofFloat(rippleView, "ScaleY", 1.0f, rRippleScale)
+            scaleYAnimator.repeatCount = 1
+            scaleYAnimator.repeatMode = ObjectAnimator.RESTART
+            scaleYAnimator.startDelay = (i * rRippleDelay).toLong()
+            animatorList2!!.add(scaleYAnimator)
+            val alphaAnimator = ObjectAnimator.ofFloat(rippleView, "Alpha", 1.0f, 0f)
+            alphaAnimator.repeatCount = 1
+            alphaAnimator.repeatMode = ObjectAnimator.RESTART
+            alphaAnimator.startDelay = (i * rRippleDelay).toLong()
+            animatorList2!!.add(alphaAnimator)
+        }
 
         animatorSet!!.playTogether(animatorList)
-        animatorSet2!!.playTogether(animatorList)
+        animatorSet2!!.playTogether(animatorList2)
     }
 
     private inner class RippleView(context: Context) : View(context) {
@@ -135,11 +172,9 @@ class RippleBackground : RelativeLayout {
     }
 
     fun startRippleAnimation() {
-            for (rippleView in rippleViewList) {
-                rippleView.visibility = View.VISIBLE
-            }
-            animatorSet!!.end()
-            animatorSet2!!.end()
+        for (rippleView in rippleViewList) {
+            rippleView.visibility = View.VISIBLE
+        }
             animatorSet!!.start()
             isRippleAnimationRunning = true
 
@@ -148,9 +183,34 @@ class RippleBackground : RelativeLayout {
     companion object {
 
         private const val DEFAULT_RIPPLE_COUNT = 4
-        private const val DEFAULT_DURATION_TIME = 2500
+        private const val DEFAULT_DURATION_TIME = 2200
         private const val DEFAULT_SCALE = 5f
+
+
+        private const val DEFAULT_RIPPLE_COUNT_R = 3
+        private const val DEFAULT_DURATION_TIME_R = 2200
+        private const val DEFAULT_SCALE_R = 5.25f
+
         private const val DEFAULT_FILL_TYPE = 0
+    }
+
+
+    fun reverseRippleAnimation() {
+        for (rippleView in rRippleViewList) {
+            rippleView.visibility = View.VISIBLE
+        }
+        animatorSet2!!.start()
+        isRippleAnimationRunning = true
+
+
+    }
+
+
+
+    inner class ReverseInterpolator : Interpolator {
+        override fun getInterpolation(paramFloat: Float): Float {
+            return Math.abs(paramFloat - 1f)
+        }
     }
 
 
